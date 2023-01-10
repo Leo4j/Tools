@@ -1,4 +1,4 @@
-function Invoke-SMBClient
+function Invoke-Client
 {
 <#
 .SYNOPSIS
