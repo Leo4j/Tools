@@ -4,8 +4,6 @@ Just some tools renamed for simple AV evasion
 
 Rubeus
 
-Rubeus is a C# toolset for raw Kerberos interaction and abuses.
-
 @Credit to: https://github.com/GhostPack/Rubeus && https://github.com/gentilkiwi/kekeo/
 
 
@@ -27,3 +25,8 @@ Kevin-Robertson - https://github.com/Kevin-Robertson/Invoke-TheHash/blob/master/
 Invoke-SMBExec
 
 Kevin-Robertson - https://github.com/Kevin-Robertson/Invoke-TheHash/blob/master/Invoke-SMBExec.ps1
+
+
+Import-ActiveDirectory
+
+samratashok - https://raw.githubusercontent.com/samratashok/ADModule/master/Import-ActiveDirectory.ps1
