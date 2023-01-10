@@ -1,4 +1,4 @@
-function Invoke-SharpSecDump
+function Get-Sam
 {
 
     [CmdletBinding()]
