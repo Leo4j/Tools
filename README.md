@@ -12,3 +12,18 @@ Rubeus is a C# toolset for raw Kerberos interaction and abuses.
 Mimikatz
 
 Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+
+
+SharpSecDump
+
+G0ldenGunSec - https://github.com/G0ldenGunSec/SharpSecDump
+
+
+Invoke-SMBClient
+
+Kevin-Robertson - https://github.com/Kevin-Robertson/Invoke-TheHash/blob/master/Invoke-SMBClient.ps1
+
+
+Invoke-SMBExec
+
+Kevin-Robertson - https://github.com/Kevin-Robertson/Invoke-TheHash/blob/master/Invoke-SMBExec.ps1
