@@ -813,7 +813,7 @@ http://webstersprodigy.net
             $startMsg = "Invoke-Portscan.ps1 v$version scan initiated $startdate as: $myInvocationLine"
 
             #TODO deal with output
-            Write-PortscanOut -comment $startMsg -grepStream $grepStream -xmlStream $xmlStream -readableStream $readableStream
+            Write-PortscanOut -grepStream $grepStream -xmlStream $xmlStream -readableStream $readableStream
 
             # #converting back from int array gives some argument error checking
             # $sPortList = [string]::join(",", $portList)
@@ -1066,7 +1066,7 @@ http://webstersprodigy.net
                     $computersDone++
                     if(!$noProgressMeter)
                     {
-                        Write-Progress -status "Port Scanning" -Activity $startMsg -CurrentOperation "starting computer $computersDone"  -PercentComplete ($computersDone / $hostList.Count * 100)
+                        Write-Progress -status "Port Scanning" -CurrentOperation "starting computer $computersDone"  -PercentComplete ($computersDone / $hostList.Count * 100)
                     }
 
                     Start-Job -ScriptBlock $portScanCode -Name $iHost -ArgumentList @($iHost, $SkipDiscovery, $PingOnly, $Timeout, $portList, $hostPortList, $Threads)  | Out-Null
