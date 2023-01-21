@@ -813,7 +813,7 @@ http://webstersprodigy.net
             $startMsg = "Invoke-Portscan.ps1 v$version scan initiated $startdate as: $myInvocationLine"
 
             #TODO deal with output
-            Write-PortscanOut -grepStream $grepStream -xmlStream $xmlStream -readableStream $readableStream
+            # Write-PortscanOut -grepStream $grepStream -xmlStream $xmlStream -readableStream $readableStream
 
             # #converting back from int array gives some argument error checking
             # $sPortList = [string]::join(",", $portList)
