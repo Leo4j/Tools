@@ -1,4 +1,4 @@
-function Invoke-Mimikatz
+function Mimi
 {
 
 [CmdletBinding(DefaultParameterSetName="DumpCreds")]
