@@ -1,3 +1,14 @@
+<#
+
+.SYNOPSIS
+Ask4Creds.ps1 Author: Rob LP (@L3o4j)
+https://github.com/Leo4j
+
+.DESCRIPTION
+Prompt User for credentials
+
+#>
+
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
