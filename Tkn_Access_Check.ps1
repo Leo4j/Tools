@@ -93,7 +93,7 @@ function Access_Check {
 	}
 
  	if($ComputerAccess){
-  		$ComputerAccess
+  		$ComputerAccess | ForEach-Object { Write-Output $_ }
 
     		if($Command){
 			if($NoOutput){Invoke-Command -ScriptBlock { Invoke-Expression $Using:Command } -ComputerName $ComputerAccess -ErrorAction SilentlyContinue -AsJob > $null}
