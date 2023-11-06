@@ -84,19 +84,21 @@ function Access_Check {
 		Write-Output ""
 		Write-Output "[+] The current user has SMB Admin access on:"
 		Write-Output ""
-		$ComputerAccess
 	}
 	
 	if($Method -eq "PSRemoting"){
 		Write-Output ""
 		Write-Output "[+] The current user has PSRemoting Admin access on:"
 		Write-Output ""
-		$ComputerAccess
 	}
-	
-	if($Command){
-		if($NoOutput){Invoke-Command -ScriptBlock { Invoke-Expression $Using:Command } -ComputerName $ComputerAccess -ErrorAction SilentlyContinue -AsJob > $null}
-		else{Invoke-Command -ScriptBlock { Invoke-Expression $Using:Command } -ComputerName $ComputerAccess -ErrorAction SilentlyContinue}
-	}
-	
+
+ 	if($ComputerAccess){
+  		$ComputerAccess
+
+    		if($Command){
+			if($NoOutput){Invoke-Command -ScriptBlock { Invoke-Expression $Using:Command } -ComputerName $ComputerAccess -ErrorAction SilentlyContinue -AsJob > $null}
+			else{Invoke-Command -ScriptBlock { Invoke-Expression $Using:Command } -ComputerName $ComputerAccess -ErrorAction SilentlyContinue}
+		}
+    	}
+  	else{Write-Output "[-] No Access"}
 }
