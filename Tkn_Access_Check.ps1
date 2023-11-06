@@ -93,6 +93,7 @@ function Access_Check {
 	}
 
  	if($ComputerAccess){
+  		$ComputerAccess = $ComputerAccess | Where-Object { $_ }
   		$ComputerAccess | ForEach-Object { Write-Output $_ }
 
     		if($Command){
