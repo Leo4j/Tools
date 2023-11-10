@@ -27,7 +27,8 @@ function TGT_Monitor {
 	$registryPath = 'HKLM:\SOFTWARE\MONITOR'
 	
 	if($Clear){
-		Get-Item $registryPath | Remove-Item -Recurse -Force
+ 		if(Test-Path $registryPath){Get-Item $registryPath | Remove-Item -Recurse -Force}
+  		Remove-Variable -Name finalUniqueSections -Scope Global -ErrorAction SilentlyContinue
 		Write-Output ""
 		Write-Output "[+] Registry Cleared"
 		Write-Output ""
@@ -58,9 +59,21 @@ function TGT_Monitor {
 		}
 	}
 	
-	if($Read){return}
+	if($Read){
+ 		if (Test-Path $registryPath) {
+ 			return
+    		} 
+      		else{
+			Write-Output ""
+			Write-Output "[-] Empty Registry"
+			Write-Output ""
+   			return
+		}
+   	}
 	
-	$stopwatch = [System.Diagnostics.Stopwatch]::StartNew() # Start the stopwatch
+	if($Timeout){
+ 		$stopwatch = [System.Diagnostics.Stopwatch]::StartNew() # Start the stopwatch
+   	}
 
 	while($True){
 		
@@ -187,11 +200,11 @@ function TGT_Monitor {
 			Write-Output ""
 		}
 		
-		if ($stopwatch.Elapsed.TotalSeconds -gt $Timeout) {
-            Write-Output "Timeout reached ($Timeout seconds)"
+		if ($Timeout -AND ($stopwatch.Elapsed.TotalSeconds -gt $Timeout)) {
+            		Write-Output "Timeout reached ($Timeout seconds)"
 			Write-Output ""
-            break # Exit the loop
-        }
+            		break # Exit the loop
+        	}
 	}
 }
 
