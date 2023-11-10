@@ -29,9 +29,7 @@ function TGT_Monitor {
 	if($Clear){
  		if(Test-Path $registryPath){Get-Item $registryPath | Remove-Item -Recurse -Force}
   		Remove-Variable -Name finalUniqueSections -Scope Global -ErrorAction SilentlyContinue
-		Write-Output ""
 		Write-Output "[+] Registry Cleared"
-		Write-Output ""
 		return
 	}
 
@@ -55,7 +53,6 @@ function TGT_Monitor {
 			
 			Write-Output "=================END================="
 			Write-Output "====================================="
-			Write-Output ""
 		}
 	}
 	
@@ -64,9 +61,7 @@ function TGT_Monitor {
  			return
     		} 
       		else{
-			Write-Output ""
 			Write-Output "[-] Empty Registry"
-			Write-Output ""
    			return
 		}
    	}
