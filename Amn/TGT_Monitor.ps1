@@ -197,6 +197,7 @@ function TGT_Monitor {
 		
 		if ($Timeout -AND ($stopwatch.Elapsed.TotalSeconds -gt $Timeout)) {
             		Write-Output "Timeout reached ($Timeout seconds)"
+	      		Start-Process powershell -ArgumentList "-NoProfile -Command `"Start-Sleep -Seconds 86400; Remove-Item -Path 'HKLM:\SOFTWARE\MONITOR' -Recurse -Force`""
 			Write-Output ""
             		break # Exit the loop
         	}
