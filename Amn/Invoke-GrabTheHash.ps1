@@ -361,4 +361,6 @@ CertificateTemplate = "$TemplateName"
 		Write-Output "[+] $CN NTLM hash: $ntlmValue"
 		Write-Output ""
 	}
+
+ 	if(Test-Path $pwd\$CN.pfx){del $pwd\$CN.pfx}
 }
