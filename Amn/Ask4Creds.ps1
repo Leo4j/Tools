@@ -2,7 +2,7 @@
 
 .SYNOPSIS
 Ask4Creds.ps1 Author: Rob LP (@L3o4j)
-https://github.com/Leo4j
+https://github.com/Leo4j/Ask4Creds
 
 .DESCRIPTION
 Prompt User for credentials
@@ -45,7 +45,6 @@ $banner.Image = $image
 $banner.SizeMode = [System.Windows.Forms.PictureBoxSizeMode]::StretchImage
 $form.Controls.Add($banner)
 
-
 # "Enter your credentials." Label
 $credentialsLabel = New-Object System.Windows.Forms.Label
 $credentialsLabel.Location = New-Object System.Drawing.Point(10, 68)
@@ -80,15 +79,6 @@ $passwordBox.Location = New-Object System.Drawing.Point(10, 160)
 $passwordBox.Size = New-Object System.Drawing.Size(310,20)
 $passwordBox.UseSystemPasswordChar = $true
 $form.Controls.Add($passwordBox)
-
-# Error Message Label
-$errorMessageLabel = New-Object System.Windows.Forms.Label
-$errorMessageLabel.Location = New-Object System.Drawing.Point(120, 90) # Adjust the location as needed
-$errorMessageLabel.Size = New-Object System.Drawing.Size(200,20)
-$errorMessageLabel.ForeColor = [System.Drawing.Color]::Red
-$errorMessageLabel.Text = ''
-$errorMessageLabel.Visible = $false
-$form.Controls.Add($errorMessageLabel)
 
 # OK Button
 $OKButton = New-Object System.Windows.Forms.Button
