@@ -5,6 +5,11 @@ function Invoke-DCSync
 		Stolen from https://github.com/S3cur3Th1sSh1t/Creds/blob/master/PowershellScripts/Invoke-DCSync.ps1 and slightly modified to run for all accounts without providing DC and username info
         The above was stolen from https://github.com/vletoux/MakeMeEnterpriseAdmin/blob/master/MakeMeEnterpriseAdmin.ps1 and slightly modified to choose username and DC for the sync.
         License: BSD 3-Clause
+
+	.USAGE
+	Invoke-DCSync
+	Invoke-DCSync -Hashcat
+	Invoke-DCSync -Domain domain.local -DomainController DC01.domain.local
     #>
 
     Param
