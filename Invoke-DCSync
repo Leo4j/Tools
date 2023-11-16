@@ -1493,10 +1493,16 @@ if(!$Domain){
 }
 
 if(!$DomainController){
-	$result = nslookup -type=all "_ldap._tcp.dc._msdcs.$Domain" 2>$null
+		
+	$DomainController = $RetrieveDomain.RidRoleOwner.Name
+	
+	if(!$DomainController){
 
-	# Filtering to find the line with 'svr hostname' and then split it to get the last part which is our DC name.
-	$DomainController = ($result | Where-Object { $_ -like '*svr hostname*' } | Select-Object -First 1).Split('=')[-1].Trim()
+		$result = nslookup -type=all "_ldap._tcp.dc._msdcs.$Domain" 2>$null
+
+		# Filtering to find the line with 'svr hostname' and then split it to get the last part which is our DC name.
+		$DomainController = ($result | Where-Object { $_ -like '*svr hostname*' } | Select-Object -First 1).Split('=')[-1].Trim()
+	}
 }
 
 $connection = Establish-LDAPSession -Domain $Domain -DomainController $DomainController
