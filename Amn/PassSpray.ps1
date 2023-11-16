@@ -11,7 +11,7 @@ Domain Password Spray
 
 Add-Type -AssemblyName System.DirectoryServices.AccountManagement
 
-function PassSpray {
+function Invoke-PassSpray {
 	Param
     (
 		[string]
