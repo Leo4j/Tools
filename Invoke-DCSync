@@ -10,9 +10,9 @@ function Invoke-DCSync
     Param
     (
         [string]
-        $dcfqdn,
-        [string]
-        $username,
+        $DomainController,
+		[string]
+        $Domain,
 		[switch]
 		$Hashcat
     )
@@ -1475,20 +1475,24 @@ Add-Type -TypeDefinition $sourceDrsr
 
 $ErrorActionPreference = "SilentlyContinue"
 
-if(!$env:USERDNSDOMAIN){
-	try{
-		$RetrieveDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
-		$RetrieveDomain = $RetrieveDomain.Name
+if(!$Domain){
+	$Domain = $env:USERDNSDOMAIN
+	if(!$Domain){
+		try{
+			$RetrieveDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
+			$RetrieveDomain = $RetrieveDomain.Name
+		}
+		catch{$RetrieveDomain = Get-WmiObject -Namespace root\cimv2 -Class Win32_ComputerSystem | Select Domain | Format-Table -HideTableHeaders | out-string | ForEach-Object { $_.Trim() }}
+		$Domain = $RetrieveDomain
 	}
-	catch{$RetrieveDomain = Get-WmiObject -Namespace root\cimv2 -Class Win32_ComputerSystem | Select Domain | Format-Table -HideTableHeaders | out-string | ForEach-Object { $_.Trim() }}
-	$Domain = $RetrieveDomain
 }
-else{$Domain = $env:USERDNSDOMAIN}
 
-$result = nslookup -type=all "_ldap._tcp.dc._msdcs.$Domain" 2>$null
+if(!$DomainController){
+	$result = nslookup -type=all "_ldap._tcp.dc._msdcs.$Domain" 2>$null
 
-# Filtering to find the line with 'svr hostname' and then split it to get the last part which is our DC name.
-$DomainController = ($result | Where-Object { $_ -like '*svr hostname*' } | Select-Object -First 1).Split('=')[-1].Trim()
+	# Filtering to find the line with 'svr hostname' and then split it to get the last part which is our DC name.
+	$DomainController = ($result | Where-Object { $_ -like '*svr hostname*' } | Select-Object -First 1).Split('=')[-1].Trim()
+}
 
 $connection = Establish-LDAPSession -Domain $Domain -DomainController $DomainController
 
