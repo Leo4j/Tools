@@ -1546,7 +1546,7 @@ function Get-ADUsers {
     $domainDistinguishedName = "DC=" + ($ADCompDomain -replace "\.", ",DC=")
 
     # Set up an LDAP search request.
-    $ldapFilter = "(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))"
+    $ldapFilter = "(&(objectCategory=person)(objectClass=user))"
     $attributesToLoad = @("samAccountName")
 
     $allusers = @()
