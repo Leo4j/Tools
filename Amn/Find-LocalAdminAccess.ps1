@@ -16,7 +16,7 @@ function Find-LocalAdminAccess {
         	[string]$Password,
 		[string]$Command,
   		[string]$Domain,
-		[string]$DomainController,
+    		[string]$DomainController,
 		[switch]$ShowErrors,
 		[switch]$scsafe,
 		[switch]$NoOutput,
@@ -31,28 +31,13 @@ function Find-LocalAdminAccess {
 	Set-Variable MaximumHistoryCount 32767
 
  	if(!$Domain){
-		try{
-			$RetrieveDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
+		$Domain = $env:USERDNSDOMAIN
+  		if(!$Domain){$Domain = Get-WmiObject -Namespace root\cimv2 -Class Win32_ComputerSystem | Select Domain | Format-Table -HideTableHeaders | out-string | ForEach-Object { $_.Trim() }}
+  		if(!$Domain){
+    			$RetrieveDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
 			$Domain = $RetrieveDomain.Name
-			$ldapretrieveddomain = $True
-		}
-		catch{$Domain = Get-WmiObject -Namespace root\cimv2 -Class Win32_ComputerSystem | Select Domain | Format-Table -HideTableHeaders | out-string | ForEach-Object { $_.Trim() }}
-	}
-
- 	if(!$DomainController){
-		if($ldapretrieveddomain){
-			$dcObjects = @($RetrieveDomain.DomainControllers)
-			$DomainController = $dcObjects[0].Name
-			#$DomainController = ($RetrieveDomain.FindDomainController()).Name
-			#$DomainController = $allDCs[0].Name
-		}
-		else{
-			$result = nslookup -type=all "_ldap._tcp.dc._msdcs.$Domain" 2>$null
-			$DomainController = ($result | Where-Object { $_ -like '*svr hostname*' } | Select-Object -First 1).Split('=')[-1].Trim()
 		}
 	}
-	
-	$connection = Establish-LDAPSession -Domain $Domain -DomainController $DomainController
 
     	if (($UserName -OR $Password) -AND ($Method -eq "SMB")) {
         	Write-Output "Please use Method WMI or PSRemoting if you need to run as a different user"
@@ -74,8 +59,12 @@ function Find-LocalAdminAccess {
 		}
     	} else {
 		$Computers = @()
-        	$Computers = Get-ADComputers -ADCompDomain $Domain -LdapConnection $connection
-		$Computers = $Computers | Sort-Object
+        	$objSearcher = New-Object System.DirectoryServices.DirectorySearcher
+	 	$objSearcher.SearchRoot = New-Object System.DirectoryServices.DirectoryEntry("LDAP://$Domain")
+        	$objSearcher.Filter = "(&(sAMAccountType=805306369)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))"
+        	$objSearcher.PageSize = 1000
+        	$Computers = $objSearcher.FindAll() | ForEach-Object { $_.properties.dnshostname }
+		$Computers = $Computers | Sort-Object -Unique
     	}
 
     	$Computers = $Computers | Where-Object { $_ -and $_.trim() }
@@ -350,92 +339,6 @@ function Find-LocalAdminAccess {
 		Write-Output "[+] Command execution completed"
 		Write-Output ""
 	}
-}
-
-function Establish-LDAPSession {
-    param (
-        [string]$Domain,
-        [string]$DomainController
-    )
-
-    $ErrorActionPreference = "SilentlyContinue"
-
-    # If the DomainController parameter is just a name (not FQDN), append the domain to it.
-    if ($DomainController -notlike "*.*") {
-        $DomainController = "$DomainController.$Domain"
-    }
-
-    # Define LDAP parameters
-    $ldapServer = $DomainController
-    $ldapPort = 389 # Use 636 for LDAPS (SSL)
-
-    # Load necessary assembly
-    Add-Type -AssemblyName "System.DirectoryServices.Protocols"
-
-    # Create LDAP directory identifier
-    $identifier = New-Object System.DirectoryServices.Protocols.LdapDirectoryIdentifier($ldapServer, $ldapPort)
-
-    # Establish LDAP connection as current user
-    $ldapConnection = New-Object System.DirectoryServices.Protocols.LdapConnection($identifier)
-
-    # Use Negotiate (Kerberos or NTLM) for authentication
-    $ldapConnection.AuthType = [System.DirectoryServices.Protocols.AuthType]::Negotiate
-
-    # Bind (establish connection)
-    $ldapConnection.Bind()  # Bind as the current user
-
-    return $ldapConnection
-}
-
-function Get-ADComputers {
-    param (
-        [string]$ADCompDomain,
-        [System.DirectoryServices.Protocols.LdapConnection]$LdapConnection  # The previously established connection
-    )
-
-    $ErrorActionPreference = "SilentlyContinue"
-
-    # Construct distinguished name for the domain.
-    $domainDistinguishedName = "DC=" + ($ADCompDomain -replace "\.", ",DC=")
-
-    # Set up an LDAP search request.
-    $ldapFilter = "(&(objectCategory=computer)(objectClass=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))"
-    $attributesToLoad = @("dNSHostName")
-
-    $allcomputers = @()
-
-    # Create a page request control
-    $pageRequest = New-Object System.DirectoryServices.Protocols.PageResultRequestControl(1000)
-    
-    do {
-        $searchRequest = New-Object System.DirectoryServices.Protocols.SearchRequest(
-            $domainDistinguishedName,     # Base DN
-            $ldapFilter,                  # LDAP filter
-            [System.DirectoryServices.Protocols.SearchScope]::Subtree,
-            $attributesToLoad             # Attributes to retrieve
-        )
-
-        # Add the page request control to the search request.
-        $searchRequest.Controls.Add($pageRequest)
-        
-        # Perform the search using the provided LdapConnection.
-        $searchResponse = $LdapConnection.SendRequest($searchRequest)
-
-        # Check for a page response control and update the cookie for the next request.
-        $pageResponse = $searchResponse.Controls | Where-Object { $_ -is [System.DirectoryServices.Protocols.PageResultResponseControl] }
-
-        if ($pageResponse) {
-            $pageRequest.Cookie = $pageResponse.Cookie
-        }
-
-        # Parse the results.
-        foreach ($entry in $searchResponse.Entries) {
-            $allcomputers += $entry.Attributes["dNSHostName"][0]
-        }
-
-    } while ($pageRequest.Cookie.Length -ne 0)
-
-    return $allcomputers
 }
 
 $WmiScript = @'
