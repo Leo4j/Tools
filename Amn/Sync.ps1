@@ -1483,41 +1483,35 @@ $ErrorActionPreference = "SilentlyContinue"
 
 if(!$Domain){
 	$Domain = $env:USERDNSDOMAIN
-	if(!$Domain){
-		try{
-			$RetrieveDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
-			$RetrieveDomain = $RetrieveDomain.Name
-		}
-		catch{$RetrieveDomain = Get-WmiObject -Namespace root\cimv2 -Class Win32_ComputerSystem | Select Domain | Format-Table -HideTableHeaders | out-string | ForEach-Object { $_.Trim() }}
-		$Domain = $RetrieveDomain
-	}
+	if(!$Domain){$Domain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain().Name}
+ 	if(!$Domain){$Domain = Get-WmiObject -Namespace root\cimv2 -Class Win32_ComputerSystem | Select Domain | Format-Table -HideTableHeaders | out-string | ForEach-Object { $_.Trim() }}
 }
 
-if(!$DomainController){
-		
-	$DomainController = $RetrieveDomain.RidRoleOwner.Name
-	
+if(!$DomainController){	
+	$DomainController = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain().RidRoleOwner.Name
 	if(!$DomainController){
-
 		$result = nslookup -type=all "_ldap._tcp.dc._msdcs.$Domain" 2>$null
-
-		# Filtering to find the line with 'svr hostname' and then split it to get the last part which is our DC name.
 		$DomainController = ($result | Where-Object { $_ -like '*svr hostname*' } | Select-Object -First 1).Split('=')[-1].Trim()
 	}
 }
 
-$connection = Establish-LDAPSession -Domain $Domain -DomainController $DomainController
-
 $AllUsers = @()
-$AllUsers = Get-ADUsers -LdapConnection $connection -ADCompDomain $Domain
 
-$AllUsers = ($AllUsers | Out-String) -split "`n"
-$AllUsers = $AllUsers.Trim()
-$AllUsers = $AllUsers | Where-Object { $_ -ne "" }
+$objSearcher = New-Object System.DirectoryServices.DirectorySearcher
+if($Domain){
+	if($DomainController){
+		$TempDomainName = "DC=" + $Domain.Split(".")
+		$domainDN = $TempDomainName -replace " ", ",DC="
+		$ldapPath = "LDAP://$DomainController/$domainDN"
+		$objSearcher.SearchRoot = New-Object System.DirectoryServices.DirectoryEntry($ldapPath)
+	}
+	else{$objSearcher.SearchRoot = New-Object System.DirectoryServices.DirectoryEntry("LDAP://$Domain")}
+}
+else{$objSearcher.SearchRoot = New-Object System.DirectoryServices.DirectoryEntry}
+$objSearcher.Filter = "(&(objectClass=user)(objectCategory=person))"
+$objSearcher.PageSize = 1000
+$AllUsers = $objSearcher.FindAll() | ForEach-Object { $_.properties.samaccountname }
 $AllUsers = $AllUsers | Sort-Object -Unique
-$AllUsers = $AllUsers | Where-Object { $_ -and $_.trim() }
-$AllUsers = $AllUsers | Where-Object { $_ -ne "" }
-$AllUsers = $AllUsers | Where-Object { $_ -ne "0" }
 
 $drsr =  New-Object  drsrdotnet.drsr
 $drsr.Initialize($DomainController, $Domain)
@@ -1534,86 +1528,4 @@ foreach($usr in $AllUsers){
 		Write-Output "$FinalLine"
   	}catch{}
 }
-}
-
-function Get-ADUsers {
-    param (
-        [string]$ADCompDomain,
-        [System.DirectoryServices.Protocols.LdapConnection]$LdapConnection  # The previously established connection
-    )
-
-    # Construct distinguished name for the domain.
-    $domainDistinguishedName = "DC=" + ($ADCompDomain -replace "\.", ",DC=")
-
-    # Set up an LDAP search request.
-    $ldapFilter = "(&(objectCategory=person)(objectClass=user))"
-    $attributesToLoad = @("samAccountName")
-
-    $allusers = @()
-
-    # Create a page request control
-    $pageRequest = New-Object System.DirectoryServices.Protocols.PageResultRequestControl(1000)
-    
-    do {
-        $searchRequest = New-Object System.DirectoryServices.Protocols.SearchRequest(
-            $domainDistinguishedName,     # Base DN
-            $ldapFilter,                  # LDAP filter
-            [System.DirectoryServices.Protocols.SearchScope]::Subtree,
-            $attributesToLoad             # Attributes to retrieve
-        )
-
-        # Add the page request control to the search request.
-        $searchRequest.Controls.Add($pageRequest)
-        
-        # Perform the search using the provided LdapConnection.
-        $searchResponse = $LdapConnection.SendRequest($searchRequest)
-
-        # Check for a page response control and update the cookie for the next request.
-        $pageResponse = $searchResponse.Controls | Where-Object { $_ -is [System.DirectoryServices.Protocols.PageResultResponseControl] }
-
-        if ($pageResponse) {
-            $pageRequest.Cookie = $pageResponse.Cookie
-        }
-
-        # Parse the results.
-        foreach ($entry in $searchResponse.Entries) {
-            $allusers += $entry.Attributes["samAccountName"][0]
-        }
-
-    } while ($pageRequest.Cookie.Length -ne 0)
-
-    return $allusers
-}
-
-function Establish-LDAPSession {
-    param (
-        [string]$Domain,
-        [string]$DomainController
-    )
-
-    # If the DomainController parameter is just a name (not FQDN), append the domain to it.
-    if ($DomainController -notlike "*.*") {
-        $DomainController = "$DomainController.$Domain"
-    }
-
-    # Define LDAP parameters
-    $ldapServer = $DomainController
-    $ldapPort = 389 # Use 636 for LDAPS (SSL)
-
-    # Load necessary assembly
-    Add-Type -AssemblyName "System.DirectoryServices.Protocols"
-
-    # Create LDAP directory identifier
-    $identifier = New-Object System.DirectoryServices.Protocols.LdapDirectoryIdentifier($ldapServer, $ldapPort)
-
-    # Establish LDAP connection as current user
-    $ldapConnection = New-Object System.DirectoryServices.Protocols.LdapConnection($identifier)
-
-    # Use Negotiate (Kerberos or NTLM) for authentication
-    $ldapConnection.AuthType = [System.DirectoryServices.Protocols.AuthType]::Negotiate
-
-    # Bind (establish connection)
-    $ldapConnection.Bind()  # Bind as the current user
-
-    return $ldapConnection
 }
