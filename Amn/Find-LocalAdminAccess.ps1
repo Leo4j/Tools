@@ -30,15 +30,6 @@ function Find-LocalAdminAccess {
 	
 	Set-Variable MaximumHistoryCount 32767
 
- 	if(!$Domain){
-		$Domain = $env:USERDNSDOMAIN
-  		if(!$Domain){$Domain = Get-WmiObject -Namespace root\cimv2 -Class Win32_ComputerSystem | Select Domain | Format-Table -HideTableHeaders | out-string | ForEach-Object { $_.Trim() }}
-  		if(!$Domain){
-    			$RetrieveDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
-			$Domain = $RetrieveDomain.Name
-		}
-	}
-
     	if (($UserName -OR $Password) -AND ($Method -eq "SMB")) {
         	Write-Output "Please use Method WMI or PSRemoting if you need to run as a different user"
         	return
@@ -60,7 +51,16 @@ function Find-LocalAdminAccess {
     	} else {
 		$Computers = @()
         	$objSearcher = New-Object System.DirectoryServices.DirectorySearcher
-	 	$objSearcher.SearchRoot = New-Object System.DirectoryServices.DirectoryEntry("LDAP://$Domain")
+			if($Domain){
+				if($DomainController){
+					$TempDomainName = "DC=" + $Domain.Split(".")
+					$domainDN = $TempDomainName -replace " ", ",DC="
+					$ldapPath = "LDAP://$DomainController/$domainDN"
+					$objSearcher.SearchRoot = New-Object System.DirectoryServices.DirectoryEntry($ldapPath)
+				}
+				else{$objSearcher.SearchRoot = New-Object System.DirectoryServices.DirectoryEntry("LDAP://$Domain")}
+			}
+			else{$objSearcher.SearchRoot = New-Object System.DirectoryServices.DirectoryEntry}
         	$objSearcher.Filter = "(&(sAMAccountType=805306369)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))"
         	$objSearcher.PageSize = 1000
         	$Computers = $objSearcher.FindAll() | ForEach-Object { $_.properties.dnshostname }
