@@ -1483,16 +1483,21 @@ $ErrorActionPreference = "SilentlyContinue"
 
 if(!$Domain){
 	$Domain = $env:USERDNSDOMAIN
-	if(!$Domain){$Domain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain().Name}
+	if(!$Domain){$Domain = [System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().DomainName.Trim()}
  	if(!$Domain){$Domain = Get-WmiObject -Namespace root\cimv2 -Class Win32_ComputerSystem | Select Domain | Format-Table -HideTableHeaders | out-string | ForEach-Object { $_.Trim() }}
 }
 
-if(!$DomainController){	
-	$DomainController = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain().RidRoleOwner.Name
-	if(!$DomainController){
+if(!$DomainController){
+	$currentDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetDomain((New-Object System.DirectoryServices.ActiveDirectory.DirectoryContext('Domain', $Domain)))
+	$domainControllers = $currentDomain.DomainControllers
+ 	$DomainController = $domainControllers[0].Name
+  	if(!$DomainController){
+		$DomainController = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain().RidRoleOwner.Name
+	}
+  	if(!$DomainController){
 		$result = nslookup -type=all "_ldap._tcp.dc._msdcs.$Domain" 2>$null
 		$DomainController = ($result | Where-Object { $_ -like '*svr hostname*' } | Select-Object -First 1).Split('=')[-1].Trim()
-	}
+  	}
 }
 
 $AllUsers = @()
@@ -1513,7 +1518,7 @@ $objSearcher.PageSize = 1000
 $AllUsers = $objSearcher.FindAll() | ForEach-Object { $_.properties.samaccountname }
 $AllUsers = $AllUsers | Sort-Object -Unique
 
-$drsr =  New-Object  drsrdotnet.drsr
+$drsr = New-Object drsrdotnet.drsr
 $drsr.Initialize($DomainController, $Domain)
 
 foreach($usr in $AllUsers){
