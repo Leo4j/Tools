@@ -1,5 +1,15 @@
 function Access_Check {
-	param($Method, $Targets, $Command, [switch]$NoOutput)
+	param(
+ 		[string]$Method,
+   		[string]$Targets,
+     		[string]$Command,
+       		[string]$Domain,
+       		[string]$DomainController,
+       		[switch]$NoOutput
+	 )
+
+  	$ErrorActionPreference = "SilentlyContinue"
+	$WarningPreference = "SilentlyContinue"
 	
 	if ($Targets) {
 		$Computers = $Targets
@@ -8,19 +18,31 @@ function Access_Check {
 	}
 	
 	else{
-		$objSearcher = New-Object System.DirectoryServices.DirectorySearcher
-		$objSearcher.SearchRoot = New-Object System.DirectoryServices.DirectoryEntry
-		$objSearcher.PageSize = 1000
-		$objSearcher.Filter = "(&(sAMAccountType=805306369))"
-		$Computers = $objSearcher.FindAll() | %{$_.properties.dnshostname}
+		$Computers = @()
+        	$objSearcher = New-Object System.DirectoryServices.DirectorySearcher
+			if($Domain){
+				if($DomainController){
+					$TempDomainName = "DC=" + $Domain.Split(".")
+					$domainDN = $TempDomainName -replace " ", ",DC="
+					$ldapPath = "LDAP://$DomainController/$domainDN"
+					$objSearcher.SearchRoot = New-Object System.DirectoryServices.DirectoryEntry($ldapPath)
+				}
+				else{$objSearcher.SearchRoot = New-Object System.DirectoryServices.DirectoryEntry("LDAP://$Domain")}
+			}
+			else{$objSearcher.SearchRoot = New-Object System.DirectoryServices.DirectoryEntry}
+        	$objSearcher.Filter = "(&(sAMAccountType=805306369)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))"
+        	$objSearcher.PageSize = 1000
+        	$Computers = $objSearcher.FindAll() | ForEach-Object { $_.properties.dnshostname }
+		$Computers = $Computers | Sort-Object -Unique
 	}
 	
-	if($Method -eq "SMB"){$Command = $null}
-	
+	$Computers = $Computers | Where-Object { $_ -and $_.trim() }
 	$HostFQDN = [System.Net.Dns]::GetHostByName(($env:computerName)).HostName
+	$TempHostname = $HostFQDN -replace '\..*', ''
 	$Computers = $Computers | Where-Object {$_ -ne "$HostFQDN"}
+	$Computers = $Computers | Where-Object {$_ -ne "$TempHostname"}
 	
-	if($Method -eq "SMB"){$PortScan = 445}
+	if($Method -eq "SMB"){$PortScan = 445;$Command = $null}
 	elseif($Method -eq "PSRemoting"){$PortScan = 5985}
 	
 	$runspacePool = [runspacefactory]::CreateRunspacePool(1, 10)
