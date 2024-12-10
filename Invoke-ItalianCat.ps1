@@ -8,7 +8,7 @@ function invOKE-ItalIanCAT {
         ${Co`M`MAND},
 
         [Parameter (Mandatory=$False, ValueFromPipeline=$true)]
-        [String]
+        [switch]
         $Drivers
     )
 
